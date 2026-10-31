@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Judge0 JDBC Tester</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            min-height: 100px;
+        }
+        .status { margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Judge0 JDBC Connection Tester</h1>
+        <p>This will submit a Java program that connects to your MySQL database (10.215.16.8) and fetches data from the <code>demo</code> table.</p>
+        
+        <div>
+            <label for="judge0Url">Judge0 API URL:</label><br>
+            <input type="text" id="judge0Url" value="http://34.4.27.28:2358" style="width: 100%; padding: 8px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+
+        <button id="runBtn" onclick="runJdbcTest()">Run JDBC Test</button>
+        
+        <div class="status" id="statusText">Status: Ready</div>
+        
+        <h3>Output:</h3>
+        <pre id="output">Waiting for execution...</pre>
+    </div>
+
+    <script>
+        async function runJdbcTest() {
+            const btn = document.getElementById('runBtn');
+            const output = document.getElementById('output');
+            const statusText = document.getElementById('statusText');
+            const baseUrl = document.getElementById('judge0Url').value;
+            
+            btn.disabled = true;
+            statusText.innerText = "Status: Submitting code...";
+            output.innerText = "";
+
+            const sourceCode = `import java.sql.*;
+
+public class Main {
+    public static void main(String[] args) {
+        try (Connection conn = DriverManager.getConnection("jdbc:mysql://172.17.0.1:3306/test_db", "judge0user", "Mhit@13158920");
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM demo")) {
+            System.out.println("JDBC Connection Successful!");
+            System.out.println("ID | Name");
+            System.out.println("---------");
+            while (rs.next()) {
+                System.out.println(rs.getInt("id") + " | " + rs.getString("name"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+}`;
+
+            try {
+                // 1. Submit the code
+                const submitResponse = await fetch(`${baseUrl}/submissions?base64_encoded=false`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        source_code: sourceCode,
+                        language_id: 62, // Java
+                        enable_network: true // Required for JDBC
+                    })
+                });
+
+                if (!submitResponse.ok) throw new Error("Failed to submit code.");
+                const submitData = await submitResponse.json();
+                const token = submitData.token;
+
+                statusText.innerText = "Status: Processing (Waiting for results)...";
+
+                // 2. Poll for results
+                let resultData;
+                let attempts = 0;
+                while (attempts < 10) {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                    
+                    const getResponse = await fetch(`${baseUrl}/submissions/${token}?base64_encoded=false`);
+                    resultData = await getResponse.json();
+
+                    if (resultData.status.id >= 3) {
+                        break; // Completed (3=Accepted, 4=Wrong Answer, 5=Time Limit Exceeded, 6=Compilation Error, etc.)
+                    }
+                    attempts++;
+                }
+
+                // 3. Display results
+                statusText.innerText = `Status: Finished - ${resultData.status.description}`;
+                
+                if (resultData.compile_output) {
+                    output.innerText += "--- Compilation Output ---\n" + resultData.compile_output + "\n\n";
+                }
+                if (resultData.stdout) {
+                    output.innerText += "--- Standard Output ---\n" + resultData.stdout;
+                }
+                if (resultData.stderr) {
+                    output.innerText += "--- Standard Error ---\n" + resultData.stderr;
+                }
+                if (!resultData.compile_output && !resultData.stdout && !resultData.stderr) {
+                    output.innerText = "No output generated.";
+                }
+
+            } catch (error) {
+                statusText.innerText = "Status: Error occurred";
+                output.innerText = error.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

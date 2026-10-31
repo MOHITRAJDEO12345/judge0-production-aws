@@ -1,0 +1,49 @@
+FROM judge0/judge0:1.13.1
+
+USER root
+
+# Download MySQL JDBC Driver (8.0.33)
+ADD https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.0.33/mysql-connector-j-8.0.33.jar \
+    /usr/local/lib/mysql-connector.jar
+
+# Set proper permissions
+RUN chmod 644 /usr/local/lib/mysql-connector.jar
+
+# Let entrypoint handle user switching
+
+# Add portable OpenJDK 17
+ADD https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.11%2B9/OpenJDK17U-jdk_x64_linux_hotspot_17.0.11_9.tar.gz /tmp/jdk17.tar.gz
+RUN mkdir -p /usr/local/openjdk17 && \
+    tar -xzf /tmp/jdk17.tar.gz -C /usr/local/openjdk17 --strip-components=1 && \
+    rm /tmp/jdk17.tar.gz
+
+# Add portable OpenJDK 21
+ADD https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.3%2B9/OpenJDK21U-jdk_x64_linux_hotspot_21.0.3_9.tar.gz /tmp/jdk21.tar.gz
+RUN mkdir -p /usr/local/openjdk21 && \
+    tar -xzf /tmp/jdk21.tar.gz -C /usr/local/openjdk21 --strip-components=1 && \
+    rm /tmp/jdk21.tar.gz
+
+# Add portable Python 3.11
+ADD https://github.com/indygreg/python-build-standalone/releases/download/20240224/cpython-3.11.8+20240224-x86_64-unknown-linux-gnu-install_only.tar.gz /tmp/python311.tar.gz
+RUN mkdir -p /usr/local/python-3.11 && \
+    tar -xzf /tmp/python311.tar.gz -C /usr/local/python-3.11 --strip-components=1 && \
+    rm /tmp/python311.tar.gz
+
+# Add portable GCC 14.2.0 (C/C++) from xPack
+ADD https://github.com/xpack-dev-tools/gcc-xpack/releases/download/v14.2.0-2/xpack-gcc-14.2.0-2-linux-x64.tar.gz /tmp/gcc14.tar.gz
+RUN mkdir -p /usr/local/gcc14 && \
+    tar -xzf /tmp/gcc14.tar.gz -C /usr/local/gcc14 --strip-components=1 && \
+    rm /tmp/gcc14.tar.gz
+
+# Add portable Node.js 22 (LTS) and install TypeScript
+ADD https://nodejs.org/dist/v22.11.0/node-v22.11.0-linux-x64.tar.xz /tmp/node22.tar.xz
+RUN mkdir -p /usr/local/node-v22 && \
+    tar -xJf /tmp/node22.tar.xz -C /usr/local/node-v22 --strip-components=1 && \
+    rm /tmp/node22.tar.xz && \
+    PATH="/usr/local/node-v22/bin:$PATH" npm install -g typescript
+
+# Permanently patch Judge0's internal database seeds so it auto-seeds our languages on boot
+COPY patch_languages.rb /tmp/patch_languages.rb
+RUN ruby /tmp/patch_languages.rb && \
+    rm /tmp/patch_languages.rb
+
