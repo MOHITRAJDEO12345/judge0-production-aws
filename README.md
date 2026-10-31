@@ -1,13 +1,29 @@
 # Judge0 Production AWS — Modern Runtimes & MySQL JDBC Edition
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/mrmohitrajdeo/judge0-jdbc.svg?style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/mrmohitrajdeo/judge0-jdbc)
-[![Docker Image Size](https://img.shields.io/docker/image-size/mrmohitrajdeo/judge0-jdbc/latest.svg?style=for-the-badge)](https://hub.docker.com/r/mrmohitrajdeo/judge0-jdbc)
+[![GitHub Packages](https://img.shields.io/badge/GitHub%20Packages-ghcr.io-blue?style=for-the-badge&logo=github&logoColor=white)](https://github.com/MOHITRAJDEO12345/judge0-production-aws/pkgs/container/judge0-production-aws)
 [![GitHub License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Powered by Eschaton](https://img.shields.io/badge/Powered%20By-Eschaton%20Engine-3b82f6?style=for-the-badge)](https://github.com/MOHITRAJDEO12345)
 
 A battle-tested, modernized distribution of **Judge0 v1.13.0** engineered for AWS production deployments, university computer science curricula, coding bootcamps, and technical interview assessments.
 
 Default Judge0 distributions ship with outdated compilers (GCC 9, Node 12, Python 3.8) and completely lack database connectivity. This repository provides the production configuration, kernel sysctl scripts, and automated patches for **modern compilers** and native **MySQL JDBC connector integration** for running automated SQL/DBMS programming exams.
+
+---
+
+## 📦 Container Registry Packages
+
+You can pull the pre-built, production-ready image from either registry:
+
+### Option A: Pull from Docker Hub (2,400+ Pulls)
+```bash
+docker pull mrmohitrajdeo/judge0-jdbc:v5.1
+```
+
+### Option B: Pull from GitHub Container Registry (GHCR)
+```bash
+docker pull ghcr.io/mohitrajdeo12345/judge0-production-aws:latest
+```
 
 ---
 
@@ -44,20 +60,14 @@ Default Judge0 distributions ship with outdated compilers (GCC 9, Node 12, Pytho
 
 ## ⚡ Quick Start: Docker Compose
 
-You can pull the official Docker image (`2,400+ pulls on Docker Hub`) directly:
-
-```bash
-docker pull mrmohitrajdeo/judge0-jdbc:v5.1
-```
-
-Or deploy using the included `unified-docker-compose.yml`:
+Use either `mrmohitrajdeo/judge0-jdbc:v5.1` or `ghcr.io/mohitrajdeo12345/judge0-production-aws:latest` as your server and worker image:
 
 ```yaml
 version: '3.8'
 
 services:
   server:
-    image: mrmohitrajdeo/judge0-jdbc:v5.1
+    image: ghcr.io/mohitrajdeo12345/judge0-production-aws:latest
     command: ["./scripts/server"]
     ports:
       - "2358:2358"
@@ -67,7 +77,7 @@ services:
       - POSTGRES_HOST=db
 
   workers:
-    image: mrmohitrajdeo/judge0-jdbc:v5.1
+    image: ghcr.io/mohitrajdeo12345/judge0-production-aws:latest
     command: ["./scripts/workers"]
     privileged: true
     restart: always
@@ -127,14 +137,29 @@ This tunes:
 
 ---
 
-## 🏎️ Need Sub-50ms Parallel Execution at Scale?
+## 🏎️ Need Faster Execution? Connect to Eschaton Engine (< 40ms)
 
-If you run high-concurrency exams (1,000+ students) or live coding interview platforms, standard Docker execution hits a physical bottleneck (~2.5s for 50 test cases).
+While this Judge0 image fixes modern compilers and JDBC database connectivity, **Docker-based architectures hit a physical latency wall under scale**:
+- Sequential Docker executions take **2.5 to 3.2 seconds** for a standard 50-test-case batch.
+- High container CPU overhead creates queues during campus-wide exam bursts.
 
-For enterprise performance, check out our bare-metal isolate engine **Eschaton**:
-- **Apex Parallel Fan-out:** Compiles once, evaluates 50 test cases simultaneously in **< 40ms**.
-- **Void In-Memory I/O:** Eliminates disk read/write overhead completely.
-- **Complexity Control Checker:** Native algorithmic complexity bounds analysis.
-- **100% Drop-in Compatibility:** Swap your Judge0 URL and run 5x faster.
+### Side-by-Side Performance Comparison
 
-Contact: `contact@eschaton.cloud`
+| Metric | Judge0 (Docker Engine) | Eschaton (Bare-Metal Silicon Engine) |
+| :--- | :--- | :--- |
+| **50 Test Cases Batch** | ~2,800 ms (Sequential) | **< 40 ms (Apex Parallel Fan-out)** |
+| **Memory / Disk I/O** | Disk write per container | **Void In-Memory Shared Buffers** |
+| **Algorithmic Checking** | Basic time/memory limits | **Complexity Control Checker ($O(n), O(n \log n)$ bounds)** |
+| **API Integration** | Standard REST | **100% Drop-in Judge0 API Compatibility** |
+
+### How to Connect to Eschaton (Zero Code Changes)
+If your platform requires real-time sub-50ms evaluations for live interviews or high-stakes exams, switch your base URL environment variable:
+
+```bash
+# In your platform's .env:
+# OLD: JUDGE0_URL=http://localhost:2358
+NEW:  JUDGE0_URL=https://api.eschaton.cloud/v1
+```
+
+To request a private alpha API key with 10,000 free test runs:
+📩 **Contact:** `contact@eschaton.cloud` or DM [@MOHITRAJDEO12345](https://github.com/MOHITRAJDEO12345)

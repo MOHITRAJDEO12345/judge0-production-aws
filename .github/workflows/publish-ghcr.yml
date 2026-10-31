@@ -1,0 +1,43 @@
+name: Publish to GitHub Container Registry
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish Production Image to GHCR Package
+        run: |
+          echo "Pulling verified Judge0 production image..."
+          docker pull mrmohitrajdeo/judge0-jdbc:v5.1
+          
+          IMAGE_ID="ghcr.io/${{ github.repository }}"
+          # Convert to lowercase in case repository name has uppercase characters
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          
+          echo "Tagging image as $IMAGE_ID:v5.1 and latest..."
+          docker tag mrmohitrajdeo/judge0-jdbc:v5.1 $IMAGE_ID:v5.1
+          docker tag mrmohitrajdeo/judge0-jdbc:v5.1 $IMAGE_ID:latest
+          
+          echo "Pushing to GitHub Packages (GHCR)..."
+          docker push $IMAGE_ID:v5.1
+          docker push $IMAGE_ID:latest
+          echo "Successfully published package to GitHub Container Registry!"
